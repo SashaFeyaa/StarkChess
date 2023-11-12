@@ -34,6 +34,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 
     'django_filters',
     'django.contrib.admin',
@@ -145,3 +146,5 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True
 }
+
+AUTH_USER_MODEL = "user_profile.User"

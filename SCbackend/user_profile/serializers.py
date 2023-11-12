@@ -81,10 +81,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.ModelSerializer):
 
-    wallet_address = serializers.CharField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
+    wallet_address = serializers.CharField(required=True)
     tokens = serializers.SerializerMethodField()
 
     def get_tokens(self, obj):
@@ -96,7 +93,7 @@ class LoginSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'username', 'tokens']
+        fields = ['wallet_address', 'profile_pic_num', 'tokens']
 
     def validate(self, attrs):
         wallet_address = attrs.get('wallet_address', '')
@@ -106,8 +103,8 @@ class LoginSerializer(serializers.ModelSerializer):
             raise AuthenticationFailed('Invalid credentials, try again')
 
         return{
-            'email': user.email,
-            'username': user.username,
+            'wallet_address': user.wallet_address,
+            'profile_pic_num': user.profile_pic_num,
             'tokens': user.get_tokens_for_user()
         }
 
