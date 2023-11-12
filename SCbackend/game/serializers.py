@@ -10,13 +10,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PVPGameStatsSerializer(serializers.ModelSerializer):
-    player1 = UserSerializer(many=True)
-    player2 = UserSerializer(many=True)
     winner = UserSerializer(many=True)
+    loser = UserSerializer(many=True)
 
     class Meta:
         model = PVPGameStats
-        fields = ['player1', 'player2', 'game_date', 'winner', 'loser']
+        fields = ['game_date', 'winner', 'loser']
 
 
 class PVCGameStatsSerializer(serializers.ModelSerializer):

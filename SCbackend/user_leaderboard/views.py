@@ -1,15 +1,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from datetime import datetime, timedelta
 from django.db.models import Sum, F, ExpressionWrapper, fields
 from django.db.models.functions import TruncMonth, TruncDay
 from user_profile.models import User
 from game.models import PVPGameStats, PVCGameStats
-from .serializers import TopUsersSerializer
+from .serializers import TopUsersSerializer, UserSerializer
 
 class DailyTopUsersView(APIView):
     def get(self, request, *args, **kwargs):
+        permission_classes = [IsAuthenticated]
+
         today = datetime.now().date()
         yesterday = today - timedelta(days=1)
 
@@ -25,12 +28,23 @@ class DailyTopUsersView(APIView):
 
         # Get the current user's position and score
         current_user = users.filter(wallet_address=request.user.wallet_address).first()
+        current_user_position = User.objects.filter(daily_score__gt=current_user.daily_score).count() + 1
 
-        serializer = TopUsersSerializer({'users': top_users, 'current_user': current_user})
+        top_users_serializer = UserSerializer(top_users, many=True)
+        current_user_serializer = UserSerializer(current_user)
+
+        serializer = TopUsersSerializer({
+            'users': top_users_serializer.data,
+            'current_user': current_user_serializer.data,
+            'current_user_position': current_user_position
+        })
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class MonthlyTopUsersView(APIView):
     def get(self, request, *args, **kwargs):
+        permission_classes = [IsAuthenticated]
+
         today = datetime.now().date()
         first_day_of_month = today.replace(day=1)
 
@@ -46,8 +60,17 @@ class MonthlyTopUsersView(APIView):
 
         # Get the current user's position and score
         current_user = users.filter(wallet_address=request.user.wallet_address).first()
+        current_user_position = User.objects.filter(monthly_score__gt=current_user.monthly_score).count() + 1
 
-        serializer = TopUsersSerializer({'users': top_users, 'current_user': current_user})
+        top_users_serializer = UserSerializer(top_users, many=True)
+        current_user_serializer = UserSerializer(current_user)
+
+        serializer = TopUsersSerializer({
+            'users': top_users_serializer.data,
+            'current_user': current_user_serializer.data,
+            'current_user_position': current_user_position
+        })
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

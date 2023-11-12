@@ -3,7 +3,8 @@ from rest_framework.validators import UniqueValidator
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
-from user_profile.models import User
+from .models import User
+from game.models import PVPGameStats, PVCGameStats
 
 
 class ValidationMixIn:
@@ -32,10 +33,20 @@ class UserDetailSerializer(serializers.ModelSerializer, ValidationMixIn):
     wallet_address = serializers.CharField(read_only=True)
     profile_pic_num = serializers.IntegerField(required=False)
     score = serializers.FloatField(required=False)
+    total_games = serializers.SerializerMethodField()
+    total_wins = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['wallet_address', 'score', 'profile_pic_num']
+        fields = ['wallet_address', 'score', 'profile_pic_num', 'total_games', 'total_wins']
+
+    def get_total_games(self, instance):
+        return PVPGameStats.objects.filter(winner=instance).count() + PVPGameStats.objects.filter(
+            loser=instance).count() + PVCGameStats.objects.filter(player=instance).count()
+
+    def get_total_wins(self, instance):
+        return PVPGameStats.objects.filter(winner=instance).count() + PVCGameStats.objects.filter(player=instance,
+                                                                                                  is_winner=True).count()
 
     def update(self, instance, validated_data):
         instance.profile_pic_num = validated_data.get('profile_pic_num', instance.profile_pic_num)

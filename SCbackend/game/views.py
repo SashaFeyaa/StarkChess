@@ -1,32 +1,52 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
 from .models import PVPGameStats, PVCGameStats
+from user_profile.models import User
 from .serializers import PVPGameStatsSerializer, PVCGameStatsSerializer
 
 class PVPGameStatsView(APIView):
-    def get(self, request, *args, **kwargs):
-        games = PVPGameStats.objects.all()
-        serializer = PVPGameStatsSerializer(games, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        serializer = PVPGameStatsSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        winner_wallet_address = request.data.get('winner_wallet_address')
+        loser_wallet_address = request.data.get('loser_wallet_address')
+
+        winner = User.objects.get(wallet_address=winner_wallet_address)
+        loser = User.objects.get(wallet_address=loser_wallet_address)
+
+        winner.add_points(1)
+        loser.add_points(-1)
+
+        winner.save()
+        loser.save()
+
+        game_stats = PVPGameStats.objects.create()
+        game_stats.winner.add(winner)
+        game_stats.loser.add(loser)
+
+        serializer = PVPGameStatsSerializer(game_stats)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class PVCGameStatsView(APIView):
-    def get(self, request, *args, **kwargs):
-        games = PVCGameStats.objects.all()
-        serializer = PVCGameStatsSerializer(games, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        serializer = PVCGameStatsSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        player_wallet_address = request.data.get('player_wallet_address')
+        is_winner = request.data.get('is_winner')
+
+        player = User.objects.get(wallet_address=player_wallet_address)
+
+        if is_winner:
+            player.add_points(1)
+        else:
+            player.add_points(-1)
+
+        player.save()
+
+        game_stats = PVCGameStats.objects.create(player=player, is_winner=is_winner)
+
+        serializer = PVCGameStatsSerializer(game_stats)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
