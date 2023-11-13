@@ -9,65 +9,79 @@ from user_profile.models import User
 from game.models import PVPGameStats, PVCGameStats
 from .serializers import TopUsersSerializer, UserSerializer
 
+
 class DailyTopUsersView(APIView):
     def get(self, request, *args, **kwargs):
         permission_classes = [IsAuthenticated]
 
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
+        users = User.objects.all()
+        top_users = sorted(users, key=lambda user: user.calculate_daily_score(), reverse=True)[:10]
 
-        # Calculate the daily score for each user
-        daily_score_expression = ExpressionWrapper(
-            Sum('pvpgamestats__winner', filter=PVPGameStats.objects.filter(game_date__date=yesterday)) +
-            Sum('pvcgamestats__is_winner', filter=PVCGameStats.objects.filter(game_date__date=yesterday)),
-            output_field=fields.FloatField()
-        )
-
-        users = User.objects.annotate(daily_score=daily_score_expression)
-        top_users = users.order_by('-daily_score')[:10]
-
-        # Get the current user's position and score
+        # Get the current user's position, score, daily score
         current_user = users.filter(wallet_address=request.user.wallet_address).first()
-        current_user_position = User.objects.filter(daily_score__gt=current_user.daily_score).count() + 1
+        current_user_position = sorted(users, key=lambda user: user.calculate_daily_score(),
+                                       reverse=True).index(current_user) + 1
+        current_user_score = current_user.score
+        current_user_daily_score = current_user.calculate_daily_score()
 
-        top_users_serializer = UserSerializer(top_users, many=True)
-        current_user_serializer = UserSerializer(current_user)
+        # Calculate daily scores for each user in the top list
+        top_users_data = []
+        for user in top_users:
+            daily_score = user.calculate_daily_score()
+            top_users_data.append({
+                'wallet_address': user.wallet_address,
+                'score': user.score,
+                'profile_pic_num': user.profile_pic_num,
+                'daily_score': daily_score,
+            })
 
         serializer = TopUsersSerializer({
-            'users': top_users_serializer.data,
-            'current_user': current_user_serializer.data,
+            'users': top_users_data,
+            'current_user': {
+                'wallet_address': current_user.wallet_address,
+                'score': current_user_score,
+                'profile_pic_num': current_user.profile_pic_num,
+                'daily_score': current_user_daily_score,
+            },
             'current_user_position': current_user_position
         })
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class MonthlyTopUsersView(APIView):
     def get(self, request, *args, **kwargs):
         permission_classes = [IsAuthenticated]
 
-        today = datetime.now().date()
-        first_day_of_month = today.replace(day=1)
+        users = User.objects.all()
+        top_users = sorted(users, key=lambda user: user.calculate_monthly_score(), reverse=True)[:10]
 
-        # Calculate the monthly score for each user
-        monthly_score_expression = ExpressionWrapper(
-            Sum('pvpgamestats__winner', filter=PVPGameStats.objects.filter(game_date__date__gte=first_day_of_month)) +
-            Sum('pvcgamestats__is_winner', filter=PVCGameStats.objects.filter(game_date__date__gte=first_day_of_month)),
-            output_field=fields.FloatField()
-        )
-
-        users = User.objects.annotate(monthly_score=monthly_score_expression)
-        top_users = users.order_by('-monthly_score')[:10]
-
-        # Get the current user's position and score
+        # Get the current user's position, score, monthly score
         current_user = users.filter(wallet_address=request.user.wallet_address).first()
-        current_user_position = User.objects.filter(monthly_score__gt=current_user.monthly_score).count() + 1
+        current_user_position = sorted(users, key=lambda user: user.calculate_monthly_score(),
+                                       reverse=True).index(current_user) + 1
+        current_user_score = current_user.score
+        current_user_monthly_score = current_user.calculate_monthly_score()
 
-        top_users_serializer = UserSerializer(top_users, many=True)
-        current_user_serializer = UserSerializer(current_user)
+        # Calculate monthly scores for each user in the top list
+        top_users_data = []
+        for user in top_users:
+            monthly_score = user.calculate_monthly_score()
+            top_users_data.append({
+                'wallet_address': user.wallet_address,
+                'score': user.score,
+                'profile_pic_num': user.profile_pic_num,
+                'monthly_score': monthly_score,
+            })
 
         serializer = TopUsersSerializer({
-            'users': top_users_serializer.data,
-            'current_user': current_user_serializer.data,
+            'users': top_users_data,
+            'current_user': {
+                'wallet_address': current_user.wallet_address,
+                'score': current_user_score,
+                'profile_pic_num': current_user.profile_pic_num,
+                'monthly_score': current_user_monthly_score,
+            },
             'current_user_position': current_user_position
         })
 

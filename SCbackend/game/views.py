@@ -6,6 +6,12 @@ from .models import PVPGameStats, PVCGameStats
 from user_profile.models import User
 from .serializers import PVPGameStatsSerializer, PVCGameStatsSerializer
 
+
+GAME_REWARD_POINTS_AMOUNT = 1
+GAME_PENALTY_POINTS_AMOUNT = -1
+GAME_TIE_POINTS_AMOUNT = 0
+
+
 class PVPGameStatsView(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -15,8 +21,8 @@ class PVPGameStatsView(APIView):
         winner = User.objects.get(wallet_address=winner_wallet_address)
         loser = User.objects.get(wallet_address=loser_wallet_address)
 
-        winner.add_points(1)
-        loser.add_points(-1)
+        winner.add_points(GAME_REWARD_POINTS_AMOUNT)
+        loser.add_points(GAME_PENALTY_POINTS_AMOUNT)
 
         winner.save()
         loser.save()
@@ -29,6 +35,7 @@ class PVPGameStatsView(APIView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
 class PVCGameStatsView(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -37,14 +44,17 @@ class PVCGameStatsView(APIView):
 
         player = User.objects.get(wallet_address=player_wallet_address)
 
-        if is_winner:
-            player.add_points(1)
+        if is_winner == 'True':
+            player.add_points(GAME_REWARD_POINTS_AMOUNT)
+        elif is_winner == 'False':
+            player.add_points(GAME_PENALTY_POINTS_AMOUNT)
         else:
-            player.add_points(-1)
+            player.add_points(GAME_TIE_POINTS_AMOUNT)
 
         player.save()
 
-        game_stats = PVCGameStats.objects.create(player=player, is_winner=is_winner)
+        game_stats = PVCGameStats.objects.create(is_winner=is_winner)
+        game_stats.player.add(player)
 
         serializer = PVCGameStatsSerializer(game_stats)
 

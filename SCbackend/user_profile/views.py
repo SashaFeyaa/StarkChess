@@ -15,19 +15,9 @@ from .permissions import IsProfileOwnerOrReadOnly
 from .serializers import UserDetailSerializer, RegisterSerializer, LoginSerializer, LogoutSerializer
 
 
-class UserProfileDetails(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated, IsProfileOwnerOrReadOnly]
-    serializer_class = UserDetailSerializer
-
-    def get_object(self):
-        obj = get_object_or_404(User, pk=self.kwargs.get('wallet_address'))
-        self.check_object_permissions(self.request, obj)
-        return obj
-
-
 class RegisterView(generics.GenericAPIView):
-
     serializer_class = RegisterSerializer
+
     def post(self, request):
         user = request.data
         serializer = self.serializer_class(data=user)
@@ -36,13 +26,16 @@ class RegisterView(generics.GenericAPIView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class LoginAPIView(generics.GenericAPIView):
-    serializer_class = LoginSerializer
 
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+class UserProfileDetails(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated, IsProfileOwnerOrReadOnly]
+    serializer_class = UserDetailSerializer
+
+    def get_object(self):
+        obj = get_object_or_404(User, wallet_address=self.kwargs.get('wallet_address'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
 
 class LogoutAPIView(views.APIView):
     serializer_class = LogoutSerializer

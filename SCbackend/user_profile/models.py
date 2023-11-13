@@ -1,30 +1,21 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext_lazy as _
 
 
 class CustomUserManager(BaseUserManager):
-    """
-    Custom user model manager where email is the unique identifiers
-    for authentication instead of usernames.
-    """
-    def create_user(self, wallet_address, **extra_fields):
-        """
-        Create and save a user with the wallet_address.
-        """
+
+    def create_user(self, wallet_address, password=None, **extra_fields):
         if not wallet_address:
             raise ValueError(_("The wallet_address must be set"))
 
         user = self.model(wallet_address=wallet_address, **extra_fields)
-        user.save()
+        user.set_password(password)
+        user.save(using=self._db)
         return user
 
-    def create_superuser(self, wallet_address, **extra_fields):
-        """
-        Create and save a SuperUser with the given email and password.
-        """
+    def create_superuser(self, wallet_address, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
@@ -33,17 +24,20 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_("Superuser must have is_staff=True."))
         if extra_fields.get("is_superuser") is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
-        return self.create_user(wallet_address, **extra_fields)
+        return self.create_user(wallet_address, password, is_superuser=True, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    username = None
     wallet_address = models.CharField(unique=True, verbose_name='Wallet Address',
                                       max_length=100, null=False, blank=False)
     score = models.FloatField(default=0, verbose_name="User Score")
     registered = models.DateTimeField(auto_now_add=True, verbose_name="Registered")
 
     is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
 
     # TODO: discuss nums for user pics
     profile_pic_num = models.IntegerField(default=0, verbose_name="User profile picture number")
@@ -61,15 +55,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # add negative number if subtraction needed
     def add_points(self, point_amount):
-        self.user_score += point_amount
+        if self.score <= 0 and point_amount < 0:
+            return None
+        self.score += point_amount
 
-    def get_tokens_for_user(self):
-        refresh = RefreshToken.for_user(self)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token)
-        }
+    def calculate_daily_score(self):
+        from .utilities import calculate_daily_score
+        return calculate_daily_score(self)
+
+    def calculate_monthly_score(self):
+        from .utilities import calculate_monthly_score
+        return calculate_monthly_score(self)
 
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
+
