@@ -47,9 +47,7 @@ class Engine {
 
 const ChessGame = () => {
     const levels = {
-      "Easy": 2,
-      "Medium": 8,
-      "Hard": 18,
+      "Hard": 12,
     };
     const engine = useMemo(() => new Engine(), []);
     const game = useMemo(() => new Chess(), []);
@@ -149,31 +147,6 @@ const ChessGame = () => {
             customLightSquareStyle={{ backgroundColor: "#FAFAFA" }}
             customPieces={customPieces}
           />
-        </Grid>
-        <Grid container spacing={2} justifyContent="center">
-        {Object.entries(levels).map(([level, depth]) => (
-            <Grid item key={level}>
-              <Button
-                variant="contained"
-                className='level-btn btn'
-                onClick={() => setStockfishLevel(depth)}
-              >
-                {level}
-              </Button>
-            </Grid>
-          ))}
-          <Grid item>
-            <Button
-              variant="contained"
-              className='newgame-btn btn'
-              onClick={() => {
-                game.reset();
-                setGamePosition(game.fen());
-              }}
-            >
-              New game
-            </Button>
-          </Grid>
         </Grid>
       </div>
     );

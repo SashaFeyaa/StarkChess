@@ -15,22 +15,35 @@ import {
 
 const Header = () => {
 
-  const [walletName, setWalletName] = useState("");
+  const [provider, setProvider] = useState('')
+  const [address, setAddress] = useState('')
+  const [name, setName] = useState('')
+  const [inputAddress, setInputAddress] = useState('')
+  const [retrievedName, setRetrievedName] = useState('')
+  const [isConnected, setIsConnected] = useState(false)
 
-  function handleConnect() {
-    return async () => {
-      const res = await connect();
-      console.log(res);
-      setWalletName(res?.name || "");
-    };
+  const connectWallet = async() => {
+    try{
+      // let the user choose a starknet wallet
+      const starknet = await connect()
+      // connect to the user-chosen wallet
+      await starknet?.enable({ starknetVersion: "v4" })
+      // set account provider
+      setProvider(starknet.account)
+      // set user address
+      setAddress(starknet.selectedAddress)
+      // set connection status
+      setIsConnected(true)
+    }
+    catch(error){
+      alert(error.message)
+    }
   }
 
-  function handleDisconnect() {
-    return async () => {
-      await disconnect();
-      setWalletName("");
-    };
-  }
+  // persist state on reload
+  useEffect(() => {
+      connectWallet()
+  }, [])
 
   return (
     <AppBar position='relative' className='header'>
@@ -58,16 +71,11 @@ const Header = () => {
           </Button>
         </div>
         <Grid className="connect" container>
-          <Button onClick={() => handleConnect()} className="connect__btn" color="inherit">
-            CONNECT
-          </Button>
-          {walletName && (
-              <div>
-                <h2>
-                  Selected Wallet: <pre>{walletName}</pre>
-                </h2>
-              </div>
-            )}
+        {
+            isConnected ?
+            <Button className="connect__btn" color="inherit">{address.slice(0, 5)}...{address.slice(60)}</Button> :
+            <Button className="connect__btn" color="inherit" onClick={() => connectWallet()}>Connect wallet</Button>
+          }
         </Grid>
       </Toolbar>
     </AppBar>

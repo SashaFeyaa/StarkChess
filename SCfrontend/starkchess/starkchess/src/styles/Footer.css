@@ -29,6 +29,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding-top: 20%;
 }
 
 .icon-div {
@@ -37,4 +38,13 @@
     background-color: #FAFAFA !important;
     border-radius: 100% !important;
 
+}
+
+.icon-div > svg {
+    font-size: 36px;
+}
+
+.icon-svg {
+    font-size: 36px;
+    padding-right: 45%;
 }

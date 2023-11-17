@@ -16,10 +16,10 @@ const Footer = () => {
       <div className='footer__content'>
         <div className='socials'>
           <IconButton className='icon-div' color="inherit" href="https://github.com">
-            <GitHubIcon />
+            <GitHubIcon className='icon-svg' />
           </IconButton>
           <IconButton className='icon-div' color="inherit" href="https://twitter.com">
-            <TwitterIcon />
+            <TwitterIcon className='icon-svg' />
           </IconButton>
         </div>
         <p className='copy'>Copyright © 2023</p>
